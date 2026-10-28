@@ -27,6 +27,9 @@ jobs:
           subject-path: '${{ github.workspace }}/target/wasm32-unknown-unknown/release/*.wasm'
       - uses: ncipollo/release-action@v1
         with:
+          tag: ${{ github.ref_name }}
           artifacts: 'target/wasm32-unknown-unknown/release/*.wasm'
           generateReleaseNotes: true
           immutableCreate: true
+          # Tag names containing a hyphen are marked as prerelease (e.g. v1.0.0-pre1).
+          prerelease: ${{ contains(github.ref_name, '-') }}
