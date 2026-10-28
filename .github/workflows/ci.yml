@@ -15,3 +15,30 @@ jobs:
         with:
           persist-credentials: false
       - uses: davidanson/markdownlint-cli2-action@v25
+
+  rustfmt:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions-rust-lang/setup-rust-toolchain@v2
+      - uses: actions-rust-lang/rustfmt@v1
+
+  clippy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions-rust-lang/setup-rust-toolchain@v2
+      - run: cargo clippy
+
+  build:
+    runs-on: ubuntu-latest      
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persistent-credentials: false
+      - uses: actions-rust-lang/setup-rust-toolchain@v2
+      - run: cargo build --all-features

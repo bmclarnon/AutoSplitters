@@ -1,0 +1,21 @@
+[package]
+name = "echo-weaver"
+version = "0.1.0"
+edition = "2024"
+
+[features]
+default = ["debug"]
+debug = ["derive_more/debug", "dep:hashbrown", "dep:spin"]
+
+[dependencies]
+asr = { git = "https://github.com/LiveSplit/asr", features = ["alloc", "derive", "integer-vars", "unity"] }
+bytemuck = { version = "1.25.2", features = ["derive", "min_const_generics"] }
+derive_more = { version = "2.1.1", default-features = false, features = ["try_from"] }
+dlmalloc = { version = "0.2.14", features = ["global"] }
+futures = { version = "0.3.34", default-features = false, features = ["async-await"] }
+
+hashbrown = { version = "0.17.1", default-features = false, optional = true, features = ["default-hasher"] }
+spin = { version = "0.12.3", default-features = false, optional = true, features = ["lazylock", "mutex", "spin_mutex"] }
+
+[lib]
+crate-type = ["cdylib"]
