@@ -1,0 +1,32 @@
+name: Create Release on Tag
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  id-token: write
+  attestations: write
+  artifact-metadata: write
+  contents: write
+
+jobs:
+  run-lint:
+    name: Build
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions-rust-lang/setup-rust-toolchain@v2
+      - run: cargo build --release --no-default-features
+      - uses: actions/attest@v4
+        with:
+          subject-path: '${{ github.workspace }}/target/wasm32-unknown-unknown/release/*.wasm'
+      - uses: ncipollo/release-action@v1
+        with:
+          artifacts: 'target/wasm32-unknown-unknown/release/*.wasm'
+          generateReleaseNotes: true
+          immutableCreate: true
