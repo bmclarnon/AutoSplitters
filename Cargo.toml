@@ -1,0 +1,14 @@
+[workspace]
+resolver = "3"
+members = [
+    "echo-weaver"
+]
+
+[profile.release]
+lto = true
+panic = "abort"
+codegen-units = 1
+strip = true
+
+[profile.release.build-override]
+opt-level = 0
