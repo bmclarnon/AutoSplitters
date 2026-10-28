@@ -65,6 +65,7 @@ enum LoopBehavior {
     Reset,
 }
 
+/// Tracked game runtime information.
 struct GameState<'a> {
     process: &'a Process,
     module: Module,
