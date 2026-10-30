@@ -92,7 +92,7 @@ struct GameState<'a> {
     leads_offsets: Option<DictionaryOffsets>,
     /// Pointer to `GameManager.Instance.currentPowerDestination`.
     power_destination_pointer: DeepPointer<2>,
-    /// Pointer to `GameManager.Instance.InFinalGauntlet.`
+    /// Pointer to `GameManager.InFinalGauntlet.`
     in_gauntlet_pointer: DeepPointer<1>,
     /// Pointer to `GameManager.Instance.endOfGameEchoRift.active`.
     game_complete_pointer: DeepPointer<3>,
