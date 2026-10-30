@@ -100,6 +100,8 @@ struct GameState<'a> {
     run_data_pointer: DeepPointer<3>,
     /// Dictionary offsets for `GameManager.Instance.RunData.blackboard` (delayed init).
     run_data_offsets: Option<DictionaryOffsets>,
+    /// Pointer to `GameManager.Player.GlaiveWarping`.
+    glaive_warping_pointer: DeepPointer<2>,
     /// Offset of `Value` in ``geode.BlackboardVariable`1``.
     variable_value_offset: u32,
 
@@ -114,6 +116,7 @@ struct GameState<'a> {
     rifts_mended: Watcher<i32>,
     in_gauntlet: Watcher<bool>,
     game_complete: Watcher<bool>,
+    glaive_warping: Watcher<bool>,
 }
 
 /// Subset of leads counted in the UI, taken from `space-game.LeadThreadInfo`.
@@ -343,12 +346,14 @@ impl<'a> GameState<'a> {
         let (
             echo_rift_class,
             game_manager_class,
+            player_controller_class,
             player_data_class,
             blackboard_class,
             variable_class,
         ) = join!(
             space_game_image.wait_get_class(process, &module, "EchoRift"),
             space_game_image.wait_get_class(process, &module, "GameManager"),
+            space_game_image.wait_get_class(process, &module, "PlayerController"),
             space_game_image.wait_get_class(process, &module, "PlayerData"),
             geode_image.wait_get_class(process, &module, "geode.Blackboard"),
             geode_image.wait_get_class(process, &module, "geode.BlackboardVariable`1"),
@@ -363,9 +368,11 @@ impl<'a> GameState<'a> {
             in_gauntlet_offset,
             loop_started_offset,
             game_manager_instance_offset,
+            player_offset,
             run_data_offset,
             power_destination_offset,
             end_of_game_rift_offset,
+            glaive_warping_offset,
             player_data_table,
             player_data_instance_offset,
             key_items_offset,
@@ -382,9 +389,11 @@ impl<'a> GameState<'a> {
             game_manager_class.wait_get_field_offset(process, &module, "InFinalGauntlet"),
             game_manager_class.wait_get_field_offset(process, &module, "LoopHasStarted"),
             game_manager_class.wait_get_field_offset(process, &module, "Instance"),
+            game_manager_class.wait_get_field_offset(process, &module, "Player"),
             game_manager_class.wait_get_field_offset(process, &module, "RunData"),
             game_manager_class.wait_get_field_offset(process, &module, "currentPowerDestination"),
             game_manager_class.wait_get_field_offset(process, &module, "endOfGameEchoRift"),
+            player_controller_class.wait_get_field_offset(process, &module, "glaiveWarping"),
             player_data_class.wait_get_static_table(process, &module),
             player_data_class.wait_get_field_offset(process, &module, "instance"),
             player_data_class.wait_get_field_offset(process, &module, "keyItems"),
@@ -475,6 +484,11 @@ impl<'a> GameState<'a> {
                     rift_active_offset as u64,
                 ],
             ),
+            glaive_warping_pointer: DeepPointer::new(
+                game_manager_table,
+                pointer_size,
+                &[player_offset as u64, glaive_warping_offset as u64],
+            ),
             run_data_pointer: DeepPointer::new(
                 game_manager_table,
                 pointer_size,
@@ -497,6 +511,7 @@ impl<'a> GameState<'a> {
             rifts_mended: Watcher::new(),
             in_gauntlet: Watcher::new(),
             game_complete: Watcher::new(),
+            glaive_warping: Watcher::new(),
         }
     }
 
@@ -732,6 +747,23 @@ impl<'a> GameState<'a> {
             #[cfg(feature = "debug")]
             asr::print_message("Game complete");
             timer::split();
+        }
+
+        // Pause game time while glaive warping to remove load times. As of 1.0.9, this matches how
+        // the game removes load times for plinths.
+        if let Some(pair) = self
+            .glaive_warping
+            .update(self.glaive_warping_pointer.deref::<bool>(self.process).ok())
+        {
+            if pair.changed_to(&true) {
+                #[cfg(feature = "debug")]
+                asr::print_message("Pausing game time for glaive warp");
+                timer::pause_game_time();
+            } else if pair.changed_to(&false) {
+                #[cfg(feature = "debug")]
+                asr::print_message("Resuming game time after glaive warp");
+                timer::resume_game_time();
+            }
         }
 
         // Check for power being routed to the colony (pumphouse complete).
