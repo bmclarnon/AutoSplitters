@@ -100,7 +100,7 @@ struct GameState<'a> {
     run_data_pointer: DeepPointer<3>,
     /// Dictionary offsets for `GameManager.Instance.RunData.blackboard` (delayed init).
     run_data_offsets: Option<DictionaryOffsets>,
-    /// Pointer to `GameManager.Player.GlaiveWarping`.
+    /// Pointer to `GameManager.Player.glaiveWarping`.
     glaive_warping_pointer: DeepPointer<2>,
     /// Offset of `Value` in ``geode.BlackboardVariable`1``.
     variable_value_offset: u32,
