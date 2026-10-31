@@ -80,7 +80,7 @@ struct GameState<'a> {
     vestige_count_pointer: DeepPointer<2>,
     /// Pointer to `PlayerData.instance.totalCollectedTimePieces`.
     dewdrop_count_pointer: DeepPointer<2>,
-    /// Pointer to `PlayerData.instance.loopCount`.
+    /// Pointer to `PlayerData.LoopHasStarted`.
     loop_started_pointer: DeepPointer<1>,
     /// Pointer to `PlayerData.instance.keyItems`.
     key_items_pointer: DeepPointer<2>,
@@ -102,6 +102,8 @@ struct GameState<'a> {
     run_data_offsets: Option<DictionaryOffsets>,
     /// Pointer to `GameManager.Player.glaiveWarping`.
     glaive_warping_pointer: DeepPointer<2>,
+    /// Pointer to `GameManager.titleSeenThisSession`.
+    title_seen_this_session_pointer: DeepPointer<1>,
     /// Offset of `Value` in ``geode.BlackboardVariable`1``.
     variable_value_offset: u32,
 
@@ -372,6 +374,7 @@ impl<'a> GameState<'a> {
             run_data_offset,
             power_destination_offset,
             end_of_game_rift_offset,
+            title_seen_this_session_offset,
             glaive_warping_offset,
             player_data_table,
             player_data_instance_offset,
@@ -393,6 +396,7 @@ impl<'a> GameState<'a> {
             game_manager_class.wait_get_field_offset(process, &module, "RunData"),
             game_manager_class.wait_get_field_offset(process, &module, "currentPowerDestination"),
             game_manager_class.wait_get_field_offset(process, &module, "endOfGameEchoRift"),
+            game_manager_class.wait_get_field_offset(process, &module, "titleSeenThisSession"),
             player_controller_class.wait_get_field_offset(process, &module, "glaiveWarping"),
             player_data_class.wait_get_static_table(process, &module),
             player_data_class.wait_get_field_offset(process, &module, "instance"),
@@ -488,6 +492,11 @@ impl<'a> GameState<'a> {
                 game_manager_table,
                 pointer_size,
                 &[player_offset as u64, glaive_warping_offset as u64],
+            ),
+            title_seen_this_session_pointer: DeepPointer::new(
+                game_manager_table,
+                pointer_size,
+                &[title_seen_this_session_offset as u64],
             ),
             run_data_pointer: DeepPointer::new(
                 game_manager_table,
@@ -732,7 +741,21 @@ impl<'a> GameState<'a> {
                 asr::print_message("Loop churned");
                 match settings.loop_behavior {
                     LoopBehavior::None => {}
-                    LoopBehavior::Split => timer::split(),
+                    LoopBehavior::Split => {
+                        // Exiting to the main menu will set `LoopHasStarted` to false, but we don't
+                        // want to split in this case since it's likely that the previous segment
+                        // wasn't completed successfully. Conveniently, exiting to the menu also
+                        // sets `titleSeenThisSession` to false.
+                        if let Ok(true) = self
+                            .title_seen_this_session_pointer
+                            .deref::<bool>(self.process)
+                        {
+                            timer::split();
+                        } else {
+                            #[cfg(feature = "debug")]
+                            asr::print_message("Suppressing split since exiting to menu");
+                        }
+                    }
                     LoopBehavior::Reset => timer::reset(),
                 }
             }
