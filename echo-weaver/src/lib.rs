@@ -48,6 +48,12 @@ struct Settings {
 
     /// Split on Loom activation
     loom: bool,
+
+    /// Split on glaive warp
+    warp: bool,
+
+    /// Split on Wayfinder Plinth completion
+    plinth: bool,
 }
 
 #[derive(Gui)]
@@ -104,6 +110,8 @@ struct GameState<'a> {
     glaive_warping_pointer: DeepPointer<2>,
     /// Pointer to `GameManager.titleSeenThisSession`.
     title_seen_this_session_pointer: DeepPointer<1>,
+    /// Pointer to `TimeTrialPlinth.ActiveInstance`.
+    active_plinth_pointer: DeepPointer<1>,
     /// Offset of `Value` in ``geode.BlackboardVariable`1``.
     variable_value_offset: u32,
 
@@ -119,6 +127,7 @@ struct GameState<'a> {
     in_gauntlet: Watcher<bool>,
     game_complete: Watcher<bool>,
     glaive_warping: Watcher<bool>,
+    active_plinth: Watcher<u64>,
 }
 
 /// Subset of leads counted in the UI, taken from `space-game.LeadThreadInfo`.
@@ -350,6 +359,7 @@ impl<'a> GameState<'a> {
             game_manager_class,
             player_controller_class,
             player_data_class,
+            time_trial_plinth_class,
             blackboard_class,
             variable_class,
         ) = join!(
@@ -357,6 +367,7 @@ impl<'a> GameState<'a> {
             space_game_image.wait_get_class(process, &module, "GameManager"),
             space_game_image.wait_get_class(process, &module, "PlayerController"),
             space_game_image.wait_get_class(process, &module, "PlayerData"),
+            space_game_image.wait_get_class(process, &module, "TimeTrialPlinth"),
             geode_image.wait_get_class(process, &module, "geode.Blackboard"),
             geode_image.wait_get_class(process, &module, "geode.BlackboardVariable`1"),
         );
@@ -384,6 +395,8 @@ impl<'a> GameState<'a> {
             remnant_count_offset,
             vestige_count_offset,
             dewdrop_count_offset,
+            time_trial_plinth_table,
+            time_trial_plinth_instance_offset,
             blackboard_offset,
             variable_value_offset,
         ) = join!(
@@ -410,6 +423,8 @@ impl<'a> GameState<'a> {
                 "totalCollectedHealStrengthPieces"
             ),
             player_data_class.wait_get_field_offset(process, &module, "totalCollectedTimePieces"),
+            time_trial_plinth_class.wait_get_static_table(process, &module),
+            time_trial_plinth_class.wait_get_field_offset(process, &module, "ActiveInstance"),
             blackboard_class.wait_get_field_offset(process, &module, "blackboard"),
             variable_class.wait_get_field_offset(process, &module, "Value"),
         );
@@ -498,6 +513,11 @@ impl<'a> GameState<'a> {
                 pointer_size,
                 &[title_seen_this_session_offset as u64],
             ),
+            active_plinth_pointer: DeepPointer::new(
+                time_trial_plinth_table,
+                pointer_size,
+                &[time_trial_plinth_instance_offset as u64],
+            ),
             run_data_pointer: DeepPointer::new(
                 game_manager_table,
                 pointer_size,
@@ -521,6 +541,7 @@ impl<'a> GameState<'a> {
             in_gauntlet: Watcher::new(),
             game_complete: Watcher::new(),
             glaive_warping: Watcher::new(),
+            active_plinth: Watcher::new(),
         }
     }
 
@@ -782,6 +803,9 @@ impl<'a> GameState<'a> {
                 #[cfg(feature = "debug")]
                 asr::print_message("Pausing game time for glaive warp");
                 timer::pause_game_time();
+                if settings.warp {
+                    timer::split();
+                }
             } else if pair.changed_to(&false) {
                 #[cfg(feature = "debug")]
                 asr::print_message("Resuming game time after glaive warp");
@@ -856,6 +880,19 @@ impl<'a> GameState<'a> {
                     addr,
                 );
             }
+        }
+
+        // Check for a plinth being completed. `TimeTrialPlinth.ActiveInstance` is non-null only
+        // during plinth completion.
+        if let Some(pair) = self
+            .active_plinth
+            .update(self.active_plinth_pointer.deref::<u64>(self.process).ok())
+            && pair.changed_from(&0)
+            && settings.plinth
+        {
+            #[cfg(feature = "debug")]
+            asr::print_message("Plinth completed");
+            timer::split();
         }
 
         // Update misc variables.

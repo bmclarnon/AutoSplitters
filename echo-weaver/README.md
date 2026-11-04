@@ -12,6 +12,10 @@ An auto splitter for
 - **Auto-Split**: A split is automatically created when opening the Relic Door
   (game end). Splits can *optionally* be created for various other progression
   events (see [Options](#options)).
+- **Load Removal**: The game timer excludes time spent warping, which is
+  dominated by load time. This matches how the game measures time for plinths,
+  though depending on LiveSplit's memory sampling interval, the timer may not
+  exactly match in-game time.
 
 ### Options
 
@@ -29,6 +33,9 @@ An auto splitter for
   problematic for your routing.*
 - **Split on Loom activation**: Splits after activating the loom, just before
   beginning the final gauntlet.
+- **Split on glaive warp**: Splits when starting a glaive warp.
+- **Split on Wayfinder Plinth completion**: Splits when a Wayfinder Plinth is
+  completed.
 
 ### Custom Variables
 
