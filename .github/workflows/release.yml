@@ -21,6 +21,8 @@ jobs:
         with:
           persist-credentials: false
       - uses: actions-rust-lang/setup-rust-toolchain@v2
+      - uses: taiki-e/install-action@cargo-about
+      - run: cargo about generate --no-default-features -o licenses.html about.hbs
       - run: cargo build --release --no-default-features
       - uses: actions/attest@v4
         with:
@@ -28,7 +30,7 @@ jobs:
       - uses: ncipollo/release-action@v1
         with:
           tag: ${{ github.ref_name }}
-          artifacts: 'target/wasm32-unknown-unknown/release/*.wasm'
+          artifacts: 'target/wasm32-unknown-unknown/release/*.wasm,licenses.html'
           generateReleaseNotes: true
           immutableCreate: true
           # Tag names containing a hyphen are marked as prerelease (e.g. v1.0.0-pre1).

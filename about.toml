@@ -1,0 +1,35 @@
+accepted = [
+    "Apache-2.0",
+    "MIT",
+    "Zlib",
+    "Unicode-3.0",
+]
+ignore-build-dependencies = true
+ignore-dev-dependencies = true
+private = { ignore = true }
+
+[asr.clarify]
+license = "Apache-2.0 OR MIT"
+
+[[asr.clarify.files]]
+path = "LICENSE-APACHE"
+license = "Apache-2.0"
+checksum = "a60eea817514531668d7e00765731449fe14d059d3249e0bc93b36de45f759f2"
+
+[[asr.clarify.files]]
+path = "LICENSE-MIT"
+license = "MIT"
+checksum = "022de55db675abeda30033f9fd02393f027d308be7a844bd823615f93e8c96fa"
+
+[asr-derive.clarify]
+license = "Apache-2.0 OR MIT"
+
+[[asr-derive.clarify.git]]
+path = "../LICENSE-APACHE"
+license = "Apache-2.0"
+checksum = "a60eea817514531668d7e00765731449fe14d059d3249e0bc93b36de45f759f2"
+
+[[asr-derive.clarify.git]]
+path = "../LICENSE-MIT"
+license = "MIT"
+checksum = "022de55db675abeda30033f9fd02393f027d308be7a844bd823615f93e8c96fa"
